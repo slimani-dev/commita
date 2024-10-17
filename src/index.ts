@@ -46,7 +46,7 @@ async function suggestAndCommit(
       });
     }*/
 
-    let runCommit = (options.commit && !!options.force) ? 'commit' : 'abort';
+    let runCommit: 'commit' | 'abort' | 'edit' = (options.commit && !!options.force) ? 'commit' : 'abort';
 
     if (options.commit && !options.force) {
       runCommit = await select({
@@ -67,32 +67,30 @@ async function suggestAndCommit(
       }
     }
 
-    if (runCommit == 'commit') {
-      const message = await openEditor(suggestedMessage);
+    if (runCommit == 'commit' || runCommit == 'edit') {
+      const message = (runCommit === 'edit') ? await openEditor(suggestedMessage) : suggestedMessage;
       await git.add('.')
       await git.commit(message);
       console.log(chalk.green('Changes committed successfully!'));
+    }
 
-      let runPush = options.push && !!options.force;
+    let runPush = options.push && !!options.force;
 
-      console.log('force', options.force)
+    if (options.push && !options.force) {
+      runPush = await confirm({
+        message: 'Push changes to remote repository?',
+        default: true,
+      });
 
-      if (options.push && !options.force) {
-        runPush = await confirm({
-          message: 'Push changes to remote repository?',
-          default: true,
-        });
-
-        if (!runPush) {
-          console.log(chalk.yellow('Changes not pushed to remote repository.'));
-        }
+      if (!runPush) {
+        console.log(chalk.yellow('Changes not pushed to remote repository.'));
       }
+    }
 
-      if (runPush) {
-        const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
-        await git.push('origin', branchName);
-        console.log(chalk.green(`Changes pushed to ${branchName}`));
-      }
+    if (runPush) {
+      const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
+      await git.push('origin', branchName);
+      console.log(chalk.green(`Changes pushed to ${branchName}`));
     }
 
   } catch (error) {
