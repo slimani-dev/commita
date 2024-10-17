@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 
 import {Command} from '@commander-js/extra-typings';
-import {input} from '@inquirer/prompts';
+import {confirm} from '@inquirer/prompts';
 import simpleGit, {SimpleGit} from 'simple-git';
 import chalk from 'chalk';
-import {suggestCommitMessage, changeModel} from './utils/ollamaUtils.js';
+import loading from "loading-cli";
 import {openEditor} from "./utils/editor.js";
+import {Prompt} from "./utils/prompt.js";
 
 const git: SimpleGit = simpleGit();
 
 const program = new Command();
+const prompt = new Prompt()
+await prompt.init()
 
 program
     .name('gitcomm')
@@ -17,33 +20,59 @@ program
     .version('1.0.0');
 
 async function getGitStatus() {
-  const status = await git.status();
-  return status;
+  return git.status();
 }
 
 async function getGitChanges() {
-  const diff = await git.diff();
-  return diff;
+  return git.diff();
 }
 
-async function suggestAndCommit() {
-  console.log(chalk.yellow('Suggesting commit message...'));
+async function suggestAndCommit(
+    options: { commit?: true | undefined, push?: true | undefined, force?: true | undefined }
+) {
+  const load = loading(chalk.yellow('Suggesting commit message...')).start()
   try {
     const changes = await getGitChanges();
-    console.log(chalk.blue('Git Changes:'));
-    console.log(changes);
-    console.log(chalk.yellow('Generating commit message...'));
-    const suggestedMessage = await suggestCommitMessage(changes);
-    console.log(chalk.blue('Suggested Commit Message:'));
+    const suggestedMessage = await prompt.suggestCommitMessage(changes);
+    load.stop()
     console.log(chalk.green(suggestedMessage));
 
-    const userMessage = await openEditor(suggestedMessage);
-    const finalMessage = userMessage || suggestedMessage;
+    let force = false;
 
-    //await git.commit(finalMessage);
-    console.log(chalk.green('Changes committed successfully!'));
+    if (options.commit || options.push) {
+      force = options.force || await confirm({
+        message: 'Commit and push changes?',
+        default: true,
+      });
+    }
+
+    const runCommit = options.commit && force || await confirm({
+      message: 'Use this as the commit message?',
+      default: true,
+    });
+
+    if (runCommit) {
+      const message = await openEditor(suggestedMessage);
+      await git.commit(message);
+      console.log(chalk.green('Changes committed successfully!'));
+
+      const runPush = options.push && force || await confirm({
+        message: 'Push changes to remote repository?',
+        default: true,
+      })
+
+      if (runPush) {
+        const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
+        await git.push('origin', branchName);
+        console.log(chalk.green(`Changes pushed to ${branchName}`));
+      }
+    } else {
+      console.log(chalk.yellow('Commit aborted.'));
+    }
+
   } catch (error) {
     console.error(chalk.red('Error suggesting commit message:', error));
+    load.stop()
   }
 }
 
@@ -79,7 +108,10 @@ program
 program
     .command('suggest-commit', {isDefault: true})
     .description('Suggest a commit message based on current changes')
-    .action(suggestAndCommit);
+    .option('-c, --commit', 'Commit the changes')
+    .option('-p, --push', 'Push changes to remote repository')
+    .option('-f, --force', 'Force commit or push without prompting')
+    .action((options) => suggestAndCommit(options));
 
 program
     .command('branch')
@@ -110,7 +142,7 @@ program
 
 program
     .command('model')
-    .description('Change or remove the default Ollama model')
-    .action(changeModel);
+    .description('Change or remove the default model')
+    .action(args => prompt.changeModel(true));
 
 program.parse();
