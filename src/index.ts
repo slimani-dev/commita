@@ -67,6 +67,8 @@ async function suggestAndCommit(
 
       let runPush = options.push && force;
 
+      console.log('force', force)
+
       if (options.push && !force) {
         runPush = await confirm({
           message: 'Push changes to remote repository?',
