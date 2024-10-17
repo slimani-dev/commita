@@ -67,8 +67,6 @@ async function suggestAndCommit(
 
       let runPush = options.push && force;
 
-      console.log('force', force)
-
       if (options.push && !force) {
         runPush = await confirm({
           message: 'Push changes to remote repository?',
@@ -80,11 +78,11 @@ async function suggestAndCommit(
         }
       }
 
-      // if (runPush) {
-      //   const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
-      //   await git.push('origin', branchName);
-      //   console.log(chalk.green(`Changes pushed to ${branchName}`));
-      // }
+      if (runPush) {
+        const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
+        await git.push('origin', branchName);
+        console.log(chalk.green(`Changes pushed to ${branchName}`));
+      }
     }
 
   } catch (error) {
