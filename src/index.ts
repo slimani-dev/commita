@@ -39,7 +39,7 @@ async function suggestAndCommit(
 
     let force = false;
 
-    if (options.commit || options.push) {
+    if (options.commit && options.push) {
       force = options.force || await confirm({
         message: 'Commit and push changes?',
         default: true,
@@ -48,7 +48,7 @@ async function suggestAndCommit(
 
     let runCommit = options.commit && force;
 
-    if (!runCommit && options.commit) {
+    if (options.commit && !force) {
       runCommit = await confirm({
         message: 'Use this as the commit message?',
         default: true,
@@ -67,7 +67,7 @@ async function suggestAndCommit(
 
       let runPush = options.push && force;
 
-      if (!runPush && options.push) {
+      if (options.push && !force) {
         runPush = await confirm({
           message: 'Push changes to remote repository?',
           default: true,
