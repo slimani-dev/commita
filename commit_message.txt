@@ -1,6 +1,0 @@
-Update .gitignore, remove unused files, and refactor prompt handling with lowdb integration
-
-Fix typo in .gitignore and add diff_output.txt  
-Remove unused files: commit_message.txt and ollamaUtils.ts  
-Add lowdb dependency and enhance prompt handling  
-Improve editor integration and commit flow  

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 import {Command} from '@commander-js/extra-typings';
-import {confirm} from '@inquirer/prompts';
+import {confirm, input} from '@inquirer/prompts';
 import simpleGit, {SimpleGit} from 'simple-git';
 import chalk from 'chalk';
 import loading from "loading-cli";
 import {openEditor} from "./utils/editor.js";
 import {Prompt} from "./utils/prompt.js";
 
-const git: SimpleGit = simpleGit();
+const git: SimpleGit = simpleGit(process.cwd());
 
 const program = new Command();
 const prompt = new Prompt()
@@ -46,28 +46,43 @@ async function suggestAndCommit(
       });
     }
 
-    const runCommit = options.commit && force || await confirm({
-      message: 'Use this as the commit message?',
-      default: true,
-    });
+    let runCommit = options.commit && force;
+
+    if (!runCommit && options.commit) {
+      runCommit = await confirm({
+        message: 'Use this as the commit message?',
+        default: true,
+      });
+
+      if (!runCommit) {
+        console.log(chalk.yellow('Commit aborted.'));
+      }
+    }
 
     if (runCommit) {
       const message = await openEditor(suggestedMessage);
+      await git.add('.')
       await git.commit(message);
       console.log(chalk.green('Changes committed successfully!'));
 
-      const runPush = options.push && force || await confirm({
-        message: 'Push changes to remote repository?',
-        default: true,
-      })
+      let runPush = options.push && force;
+
+      if (!runPush && options.push) {
+        runPush = await confirm({
+          message: 'Push changes to remote repository?',
+          default: true,
+        });
+
+        if (!runPush) {
+          console.log(chalk.yellow('Changes not pushed to remote repository.'));
+        }
+      }
 
       if (runPush) {
         const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
         await git.push('origin', branchName);
         console.log(chalk.green(`Changes pushed to ${branchName}`));
       }
-    } else {
-      console.log(chalk.yellow('Commit aborted.'));
     }
 
   } catch (error) {

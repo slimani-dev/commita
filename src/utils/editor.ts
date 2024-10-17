@@ -21,12 +21,25 @@ export async function openEditor(content: string): Promise<string> {
     await fs.writeFile(tempFilePath, content);
 
     try {
-      await execAsync(editor.value, [tempFilePath], {stdio: 'inherit'});
+      const process = spawn(editor.value, [tempFilePath], {stdio: 'inherit'});
+
+      // Optionally handle errors
+      process.on('error', (error) => {
+        console.error(chalk.red('Failed to start editor:', error));
+      });
+
+      while (process.connected) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      console.log(chalk.green('Editor closed.'));
       // Read the message back from the temporary file
       const finalMessage = await fs.readFile(tempFilePath, 'utf-8');
       // Delete the temporary file after reading
       await fs.unlink(tempFilePath);
       return finalMessage.trim();
+
+
     } catch (error: any) {
       console.error(chalk.red('Error opening editor:', error.message));
       return ''; // Return an empty string if there's an error
