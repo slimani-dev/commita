@@ -1,0 +1,1 @@
+Added new feature to handle user authentication in the application.
