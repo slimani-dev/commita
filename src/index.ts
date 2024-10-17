@@ -80,11 +80,11 @@ async function suggestAndCommit(
         }
       }
 
-      if (runPush) {
-        const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
-        await git.push('origin', branchName);
-        console.log(chalk.green(`Changes pushed to ${branchName}`));
-      }
+      // if (runPush) {
+      //   const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
+      //   await git.push('origin', branchName);
+      //   console.log(chalk.green(`Changes pushed to ${branchName}`));
+      // }
     }
 
   } catch (error) {

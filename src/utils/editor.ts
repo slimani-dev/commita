@@ -24,8 +24,6 @@ export async function openEditor(content: string): Promise<string> {
     try {
 
       await promisifiedSpawn(editor.value, [tempFilePath], {stdio: 'inherit'})
-
-      console.log(chalk.green('Editor closed.'));
       // Read the message back from the temporary file
       const finalMessage = await fs.readFile(tempFilePath, 'utf-8');
       // Delete the temporary file after reading
