@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import {Command} from '@commander-js/extra-typings';
-import {confirm, input} from '@inquirer/prompts';
+import {confirm, input, select} from '@inquirer/prompts';
 import simpleGit, {SimpleGit} from 'simple-git';
 import chalk from 'chalk';
 import loading from "loading-cli";
@@ -37,37 +37,47 @@ async function suggestAndCommit(
     load.stop()
     console.log(chalk.green(suggestedMessage));
 
-    let force = false;
+    // let force = false;
 
-    if (options.commit && options.push) {
+    /*if (options.commit && options.push) {
       force = options.force || await confirm({
         message: 'Commit and push changes?',
         default: true,
       });
-    }
+    }*/
 
-    let runCommit = options.commit && force;
+    let runCommit = (options.commit && !!options.force) ? 'commit' : 'abort';
 
-    if (options.commit && !force) {
-      runCommit = await confirm({
+    if (options.commit && !options.force) {
+      runCommit = await select({
         message: 'Use this as the commit message?',
-        default: true,
+        choices: [
+          {value: "commit", name: "commit", description: "Yes, commit the changes"},
+          {value: "abort", name: "abort", description: "No, abort the commit"},
+          {
+            value: "edit",
+            name: "edit",
+            description: "Edit the commit message manually",
+          },
+        ],
       });
 
-      if (!runCommit) {
+      if (runCommit == 'abort') {
         console.log(chalk.yellow('Commit aborted.'));
       }
     }
 
-    if (runCommit) {
+    if (runCommit == 'commit') {
       const message = await openEditor(suggestedMessage);
       await git.add('.')
       await git.commit(message);
       console.log(chalk.green('Changes committed successfully!'));
 
-      let runPush = options.push && force;
+      let runPush = options.push && !!options.force;
 
-      if (options.push && !force) {
+      console.log('force', options.force)
+
+      if (options.push && !options.force) {
         runPush = await confirm({
           message: 'Push changes to remote repository?',
           default: true,
