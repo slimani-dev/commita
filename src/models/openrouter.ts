@@ -8,7 +8,7 @@ export class OpenRouter implements AiProvider {
   name = 'openrouter';
   apiKey?: string | undefined;
   apiKeyRequired = true;
-  apiKeyHelpUrl = "https://aistudio.google.com/app/apikey";
+  apiKeyHelpUrl = "https://openrouter.ai/settings/keys";
   model?: string | undefined;
 
   private openrouter?: OpenRouterProvider
