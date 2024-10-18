@@ -1,5 +1,6 @@
 import {select, confirm, input} from '@inquirer/prompts';
 import chalk from "chalk";
+import Mustache from 'mustache'
 import {Ollama} from "../models/ollama.js";
 import {DEFAULT_PROMPT, loadConfig, saveConfig} from "./config.js";
 import {AiProvider} from "../models/ai-provider";
@@ -157,10 +158,13 @@ export class Prompt {
     await saveConfig({prompt: newPrompt});
   }
 
-  async suggestCommitMessage(changes: string): Promise<string | undefined> {
+  async suggestCommitMessage(diff: string): Promise<string | undefined> {
 
-    const prompt = `${this.prompt}${changes}`
+    const prompt = Mustache.render(`${this.prompt}$`, {
+      diff
+    });
 
     return this.provider?.runPrompt(prompt)
   }
+
 }

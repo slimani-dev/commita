@@ -17,7 +17,7 @@ interface Config {
   [key: string]: ProviderConfig | string | undefined;
 }
 
-const DEFAULT_PROMPT = 'Based on these Git changes, suggest a commit message. Give me only the commit message with no explanations or extra text:\nChanges:\n\n'
+const DEFAULT_PROMPT = 'Based on these Git changes, suggest a commit message. Give me only the commit message with no explanations or extra text:\nChanges:\n\n{{diff}}'
 const defaultData: Config = {
   prompt: DEFAULT_PROMPT,
 };
@@ -80,7 +80,7 @@ export async function saveConfig(config: Config | ProviderConfig, key?: string):
 
     // Update or replace the configuration for a model
     if (key) {
-      const currentKeyConfig = (currentConfig[key] || {})  as ProviderConfig;
+      const currentKeyConfig = (currentConfig[key] || {}) as ProviderConfig;
       // check if currentConfig[key] exist
       if (!currentConfig[key]) {
         currentConfig[key] = config;
