@@ -43,7 +43,6 @@ export class Prompt {
 
     while (this.provider?.apiKeyRequired && !(await this.provider?.checkApiKey())) {
       // show help on how to get an api key
-      console.log(chalk.red('API key required for this provider.'));
       console.log(`You can get an API key from the ${this.provider?.name} website.`);
       console.log(this.provider?.apiKeyHelpUrl);
 
@@ -52,6 +51,10 @@ export class Prompt {
       });
 
       await this.provider?.setApiKey(apiKey);
+
+      if (!(await this.provider?.checkApiKey())) {
+        console.log(chalk.red('Invalid API key. Please try again.'));
+      }
     }
   }
 
