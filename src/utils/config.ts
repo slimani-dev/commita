@@ -80,7 +80,17 @@ export async function saveConfig(config: Config | ProviderConfig, key?: string):
 
     // Update or replace the configuration for a model
     if (key) {
-      currentConfig[key] = config;
+      const currentKeyConfig = (currentConfig[key] || {})  as ProviderConfig;
+      // check if currentConfig[key] exist
+      if (!currentConfig[key]) {
+        currentConfig[key] = config;
+      } else {
+        currentConfig[key] = {
+          ...currentKeyConfig,
+          ...config
+        };
+      }
+
       db.data = currentConfig;
     } else {
       db.data = {

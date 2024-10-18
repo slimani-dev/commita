@@ -64,6 +64,8 @@ export class Google implements AiProvider {
     this.google = createGoogleGenerativeAI({
       apiKey: key
     })
+
+    this.createGeminiModel()
   }
 
   async setModel(model: string) {
