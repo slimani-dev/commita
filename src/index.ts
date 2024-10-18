@@ -15,7 +15,7 @@ const prompt = new Prompt()
 await prompt.init()
 
 program
-    .name('gitcomm')
+    .name('commita')
     .description('CLI app for Git status, changes, and commit suggestions')
     .version('1.0.0');
 

@@ -1,6 +1,6 @@
-# gitcomm
+# Commita
 
-gitcomm is a powerful CLI tool that enhances your Git workflow by providing intelligent commit message suggestions, streamlined status checks, and easy branch management. Leveraging the Ollama AI model, gitcomm offers context-aware commit message recommendations based on your changes.
+Commita is a powerful CLI tool that enhances your Git workflow by providing intelligent commit message suggestions, streamlined status checks, and easy branch management. Leveraging the Ollama AI model, commita offers context-aware commit message recommendations based on your changes.
 
 ## Features
 
@@ -13,10 +13,10 @@ gitcomm is a powerful CLI tool that enhances your Git workflow by providing inte
 
 ## Installation
 
-To install gitcomm globally, run:
+To install commita globally, run:
 
 ```bash
-npm install -g gitcomm
+npm install -g commita
 ```
 
 Make sure you have Node.js version 14 or higher installed on your system.
@@ -28,13 +28,13 @@ Make sure you have Node.js version 14 or higher installed on your system.
 To get an AI-suggested commit message based on your current changes:
 
 ```bash
-gitcomm
+commita
 ```
 
 or
 
 ```bash
-gitcomm suggest-commit
+commita suggest-commit
 ```
 
 ### Check Git Status
@@ -42,7 +42,7 @@ gitcomm suggest-commit
 To view the status of your Git repository:
 
 ```bash
-gitcomm status
+commita status
 ```
 
 ### View Changes
@@ -50,7 +50,7 @@ gitcomm status
 To see all changes in your Git repository:
 
 ```bash
-gitcomm changes
+commita changes
 ```
 
 ### Create a New Branch
@@ -58,7 +58,7 @@ gitcomm changes
 To create and switch to a new branch:
 
 ```bash
-gitcomm branch <branch-name>
+commita branch <branch-name>
 ```
 
 ### Push Changes
@@ -66,13 +66,13 @@ gitcomm branch <branch-name>
 To push changes to the remote repository:
 
 ```bash
-gitcomm push
+commita push
 ```
 
 To push to a specific branch:
 
 ```bash
-gitcomm push -b <branch-name>
+commita push -b <branch-name>
 ```
 
 ### Manage AI Model
@@ -80,12 +80,12 @@ gitcomm push -b <branch-name>
 To change or remove the default Ollama model:
 
 ```bash
-gitcomm model
+commita model
 ```
 
 ## Configuration
 
-gitcomm uses a configuration file (`.gitcomm-config.json`) in your current working directory to store settings such as the default AI model. This file is automatically created and managed by the CLI.
+commita uses a configuration file (`.commita-config.json`) in your current working directory to store settings such as the default AI model. This file is automatically created and managed by the CLI.
 
 ## Requirements
 
@@ -113,4 +113,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Happy committing with gitcomm! 🚀
+Happy committing with commita! 🚀
