@@ -1,6 +1,6 @@
 {
   "name": "commita",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "CLI app for Git status, changes, and commit suggestions",
   "main": "dist/index.js",
   "type": "module",
@@ -17,7 +17,8 @@
     "dev": "tsc -w",
     "lint": "eslint . --ext .ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn build",
+    "version:patch": "node scripts/updateVersion.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^0.0.52",

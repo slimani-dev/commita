@@ -14,10 +14,12 @@ const program = new Command();
 const prompt = new Prompt()
 await prompt.init()
 
+let version = process.env.npm_package_version || '1.0.2';
+
 program
     .name('commita')
     .description('CLI app for Git status, changes, and commit suggestions')
-    .version('1.0.1');
+    .version(version);
 
 async function getGitStatus() {
   return git.status();
