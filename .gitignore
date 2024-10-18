@@ -2,5 +2,4 @@ node_modules/
 dist/
 .env
 .idea
-.git-commit-config.json
-/diff_output.txt
+.diff_output.txt
