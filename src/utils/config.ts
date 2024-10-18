@@ -24,7 +24,7 @@ const defaultData: Config = {
 
 
 const homedir = os.homedir();
-const CONFIG_DIR = path.join(homedir, '.config', 'git-commit');
+const CONFIG_DIR = path.join(homedir, '.config', 'commita');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 async function ensureConfigFileExists() {
