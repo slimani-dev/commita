@@ -17,7 +17,7 @@ await prompt.init()
 program
     .name('commita')
     .description('CLI app for Git status, changes, and commit suggestions')
-    .version('1.0.0');
+    .version('1.0.1');
 
 async function getGitStatus() {
   return git.status();
@@ -112,8 +112,8 @@ async function suggestAndCommit(
     }
 
   } catch (error) {
-    console.error(chalk.red('Error suggesting commit message:', error));
     load.stop()
+    console.error(chalk.red('Error suggesting commit message:', error));
   }
 }
 
@@ -172,11 +172,14 @@ program
     .description('Push changes to remote repository')
     .option('-b, --branch <name>', 'Specify the branch to push')
     .action(async (options) => {
+      const load = loading(chalk.yellow('Pushing changes to remote repository...')).start()
       try {
-        const branchName = options.branch || await git.revparse(['--abbrev-ref', 'HEAD']);
+        const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
         await git.push('origin', branchName);
-        console.log(chalk.green(`Successfully pushed changes to ${branchName}`));
+        load.stop()
+        console.log(chalk.green(`Changes pushed to ${branchName}`));
       } catch (error) {
+        load.stop()
         console.error(chalk.red('Error pushing changes:', error));
       }
     });
