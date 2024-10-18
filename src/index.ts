@@ -107,8 +107,8 @@ async function suggestAndCommit(
       load = loading(chalk.yellow('Pushing changes to remote repository...')).start()
       const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
       await git.push('origin', branchName);
-      console.log(chalk.green(`Changes pushed to ${branchName}`));
       load.stop()
+      console.log(chalk.green(`Changes pushed to ${branchName}`));
     }
 
   } catch (error) {
