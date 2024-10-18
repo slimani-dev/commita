@@ -39,7 +39,7 @@ async function suggestAndCommit(
     await prompt.selectModel();
   }
 
-  const load = loading(chalk.yellow('Suggesting commit message...')).start()
+  let load = loading(chalk.yellow('Suggesting commit message...')).start()
   try {
     const changes = await getGitChanges();
     const suggestedMessage = await prompt.suggestCommitMessage(changes);
@@ -103,9 +103,12 @@ async function suggestAndCommit(
     }
 
     if (runPush) {
+      load.stop()
+      load = loading(chalk.yellow('Pushing changes to remote repository...')).start()
       const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
       await git.push('origin', branchName);
       console.log(chalk.green(`Changes pushed to ${branchName}`));
+      load.stop()
     }
 
   } catch (error) {
