@@ -1,22 +1,26 @@
 import {Ollama as OllamaProvider} from 'ollama';
-import {type AiProvider} from "./model";
+import {type AiProvider} from "./ai-provider";
 import {loadConfig, saveConfig} from "../utils/config.js";
-
-const ollama = new OllamaProvider();
 
 export class Ollama implements AiProvider {
   name: string = "ollama";
   apiKeyRequired = false;
   apiKey?: string;
-  defaultModel?: string;
+  model?: string;
+  private ollama: OllamaProvider
+
+  constructor() {
+    this.ollama = new OllamaProvider();
+  }
+
 
   async init() {
     const config = await loadConfig(this.name);
-    this.defaultModel = config?.defaultModel;
+    this.model = config?.defaultModel;
   }
 
   async getModels(): Promise<string[]> {
-    const response = await ollama.list();
+    const response = await this.ollama.list();
     return response.models.map(model => model.name);
   }
 
@@ -24,20 +28,32 @@ export class Ollama implements AiProvider {
     throw new Error('Method not implemented.');
   }
 
-  async setDefaultModel(model: string) {
-    console.log('Setting default model for ', this.name, ' to ', model)
+  checkApiKey(): Promise<boolean> {
+    throw new Error('Method not implemented.');
+  }
+
+  async setModel(model: string) {
+    this.model = model;
     return saveConfig({defaultModel: model}, this.name);
   }
 
   async runPrompt(prompt: string, model: string): Promise<string> {
-    const response = await ollama.chat({
-      model,
-      messages: [
-        {role: 'user', content: prompt}
-      ],
-      stream: false,
-    });
-    return response.message.content.trim();
+    if (!this.model && model) {
+      await this.setModel(model)
+    }
+
+    if (this.model) {
+      const response = await this.ollama.chat({
+        model: this.model,
+        messages: [
+          {role: 'user', content: prompt}
+        ],
+        stream: false,
+      });
+      return response.message.content.trim();
+    }
+
+    throw new Error("Model not selected");
   }
 
 }

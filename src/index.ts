@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import {Command} from '@commander-js/extra-typings';
-import {confirm, input, select} from '@inquirer/prompts';
+import {confirm, select} from '@inquirer/prompts';
 import simpleGit, {SimpleGit} from 'simple-git';
 import chalk from 'chalk';
 import loading from "loading-cli";
@@ -30,11 +30,26 @@ async function getGitChanges() {
 async function suggestAndCommit(
     options: { commit?: true | undefined, push?: true | undefined, force?: true | undefined }
 ) {
+
+  while (!prompt.provider) {
+    await prompt.selectProvider()
+  }
+
+  while (!prompt.model) {
+    await prompt.selectModel();
+  }
+
   const load = loading(chalk.yellow('Suggesting commit message...')).start()
   try {
     const changes = await getGitChanges();
     const suggestedMessage = await prompt.suggestCommitMessage(changes);
     load.stop()
+
+    if (!suggestedMessage) {
+      console.log(chalk.red('No commit message suggested.'));
+      return;
+    }
+
     console.log(chalk.green(suggestedMessage));
 
     // let force = false;

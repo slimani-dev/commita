@@ -16,9 +16,15 @@ export interface AiProvider {
   apiKeyRequired: boolean;
 
   /**
+   * a helper link to the docs on how to get an api key.
+   */
+
+  apiKeyHelpUrl?: string;
+
+  /**
    * The default model used by the provider if no specific model is requested.
    */
-  defaultModel?: string;
+  model?: string;
 
   /**
    * Initializes the AI provider by performing any necessary setup or authentication.
@@ -37,16 +43,22 @@ export interface AiProvider {
   setApiKey(key: string): Promise<void>;
 
   /**
+   * Check if api key is valid
+   */
+
+  checkApiKey(): Promise<boolean>;
+
+  /**
    * Sets the default model for the provider.
    * @param model - The name of the model to set as the default.
    */
-  setDefaultModel(model: string): Promise<void>;
+  setModel(model: string): Promise<void>;
 
   /**
    * Executes a prompt using the specified model and returns the generated response.
    * @param prompt - The prompt or input text to process.
-   * @param model - (Optional) The name of the model to use; uses defaultModel if not provided.
+   * @param model - (Optional) The name of the model to use; uses model if not provided.
    * @returns A promise that resolves to the generated response as a string.
    */
-  runPrompt(prompt: string, model: string): Promise<string>;
+  runPrompt(prompt: string, model?: string): Promise<string>;
 }

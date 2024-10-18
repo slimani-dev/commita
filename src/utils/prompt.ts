@@ -2,9 +2,11 @@ import {select, confirm, input} from '@inquirer/prompts';
 import chalk from "chalk";
 import {Ollama} from "../models/ollama.js";
 import {DEFAULT_PROMPT, loadConfig, saveConfig} from "./config.js";
-import {AiProvider} from "../models/model";
+import {AiProvider} from "../models/ai-provider";
+import {Google} from "../models/google.js";
 
 const ollama = new Ollama()
+const google = new Google()
 
 export class Prompt {
   providers: AiProvider[] = [];
@@ -15,13 +17,14 @@ export class Prompt {
 
   constructor() {
     this.providers.push(ollama);
+    this.providers.push(google);
     this.prompt = DEFAULT_PROMPT;
   }
 
   async init() {
     // get default provider from config
     const config = await loadConfig();
-    const defaultProvider = config.defaultProvider || 'ollama';
+    const defaultProvider = config.defaultProvider;
     this.provider = this.providers.find(provider => provider.name === defaultProvider);
 
     await this.prepareProvider();
@@ -29,9 +32,21 @@ export class Prompt {
 
   async prepareProvider() {
     await this.provider?.init();
-    this.model = this.provider?.defaultModel;
+    this.model = this.provider?.model;
+    await saveConfig({defaultModel: this.provider?.model});
 
-    await saveConfig({defaultModel: this.provider?.defaultModel});
+    while (this.provider?.apiKeyRequired && !(await this.provider?.checkApiKey())) {
+      // show help on how to get an api key
+      console.log(chalk.red('API key required for this provider.'));
+      console.log(`You can get an API key from the ${this.provider?.name} website.`);
+      console.log(this.provider?.apiKeyHelpUrl);
+
+      const apiKey = await input({
+        message: 'Enter your API key:',
+      });
+
+      await this.provider?.setApiKey(apiKey);
+    }
   }
 
   async selectProvider(setDefault = false): Promise<void> {
@@ -73,7 +88,8 @@ export class Prompt {
 
     const setAsDefault = setDefault || await confirm({message: 'Set this model as default?'});
     if (setAsDefault) {
-      await this.provider.setDefaultModel(selectedModel);
+      console.log('Setting default model for ', this.provider.name, ' to ', selectedModel)
+      await this.provider.setModel(selectedModel);
       await saveConfig({defaultModel: selectedModel});
       this.model = selectedModel;
     }
@@ -118,18 +134,10 @@ export class Prompt {
     await saveConfig({prompt: newPrompt});
   }
 
-  async suggestCommitMessage(changes: string): Promise<string> {
-
-    while (!this.provider) {
-      await this.selectProvider()
-    }
-
-    while (!this.model) {
-      await this.selectModel();
-    }
+  async suggestCommitMessage(changes: string): Promise<string | undefined> {
 
     const prompt = `${this.prompt}${changes}`
 
-    return this.provider.runPrompt(prompt, this.model)
+    return this.provider?.runPrompt(prompt)
   }
 }

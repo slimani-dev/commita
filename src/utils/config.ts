@@ -29,7 +29,7 @@ const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 async function ensureConfigFileExists() {
   try {
-    await fs.mkdir(CONFIG_DIR, { recursive: true }); // Creates the directory if it doesn't exist
+    await fs.mkdir(CONFIG_DIR, {recursive: true}); // Creates the directory if it doesn't exist
 
     try {
       await fs.access(CONFIG_FILE); // Check if the config file exists
@@ -66,7 +66,10 @@ export async function loadConfig(key?: string): Promise<ProviderConfig | Config 
   }
 }
 
-export async function saveConfig(config: Config, key?: string): Promise<void> {
+export async function saveConfig(config: ProviderConfig, key: string): Promise<void>;
+export async function saveConfig(config: Config): Promise<void>;
+
+export async function saveConfig(config: Config | ProviderConfig, key?: string): Promise<void> {
   await ensureConfigFileExists();
   const db = await JSONFilePreset(CONFIG_FILE, defaultData)
 
