@@ -1,0 +1,1748 @@
+./index.js
+// run `node index.js` in the terminal
+
+console.log(`Hello Node.js v${process.versions.node}!`);
+
+./.gitignore
+node_modules/
+dist/
+.env
+.idea
+.diff_output.txt
+
+./dist/models/ai-provider.js
+export {};
+
+./dist/models/ollama.js
+import { Ollama as OllamaProvider } from 'ollama';
+import { loadConfig, saveConfig } from "../utils/config.js";
+export class Ollama {
+    name = "ollama";
+    apiKeyRequired = false;
+    apiKey;
+    model;
+    ollama;
+    constructor() {
+        this.ollama = new OllamaProvider();
+    }
+    async init() {
+        const config = await loadConfig(this.name);
+        this.model = config?.defaultModel;
+    }
+    async getModels() {
+        const response = await this.ollama.list();
+        return response.models.map(model => model.name);
+    }
+    async setApiKey(key) {
+        throw new Error('Method not implemented.');
+    }
+    checkApiKey() {
+        throw new Error('Method not implemented.');
+    }
+    async setModel(model) {
+        this.model = model;
+        return saveConfig({ defaultModel: model }, this.name);
+    }
+    async runPrompt(prompt, model) {
+        if (!this.model && model) {
+            await this.setModel(model);
+        }
+        if (this.model) {
+            const response = await this.ollama.chat({
+                model: this.model,
+                messages: [
+                    { role: 'user', content: prompt }
+                ],
+                stream: false,
+            });
+            return response.message.content.trim();
+        }
+        throw new Error("Model not selected");
+    }
+}
+
+./dist/models/google.js
+import { generateText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { loadConfig, saveConfig } from "../utils/config.js";
+export class Google {
+    name = 'google';
+    apiKey;
+    apiKeyRequired = true;
+    apiKeyHelpUrl = "https://aistudio.google.com/app/apikey";
+    model;
+    google;
+    gemini;
+    models = [
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-pro-latest',
+    ];
+    async init() {
+        const config = await loadConfig(this.name);
+        this.model = config?.defaultModel;
+        if (config?.apiKey) {
+            this.apiKey = config?.apiKey;
+        }
+        else {
+            await this.setApiKey(config?.apiKey || '');
+        }
+        this.createGoogle();
+    }
+    createGoogle() {
+        this.google = createGoogleGenerativeAI({
+            apiKey: this.apiKey
+        });
+        this.createGeminiModel();
+    }
+    createGeminiModel() {
+        if (this.model) {
+            if (this.google) {
+                this.gemini = this.google(this.model);
+            }
+            else {
+                throw new Error("something went wrong try again later ..");
+            }
+        }
+    }
+    getModels() {
+        return Promise.resolve(this.models);
+    }
+    checkApiKey() {
+        return Promise.resolve(!!this.apiKey);
+    }
+    async setApiKey(key) {
+        await saveConfig({ apiKey: key }, this.name);
+        this.apiKey = key;
+        this.createGoogle();
+    }
+    async setModel(model) {
+        //check model is in the list of models
+        if (!this.models.includes(model)) {
+            throw new Error("Invalid model");
+        }
+        await saveConfig({ defaultModel: model }, this.name);
+        this.model = model;
+        this.createGeminiModel();
+    }
+    async runPrompt(prompt, model) {
+        if (!this.gemini && model) {
+            await this.setModel(model);
+        }
+        if (this.gemini) {
+            const { text } = await generateText({
+                model: this.gemini,
+                prompt: prompt
+            });
+            return text;
+        }
+        throw new Error("Model not selected");
+    }
+}
+
+./dist/models/openrouter.js
+import { generateText } from "ai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { loadConfig, saveConfig } from "../utils/config.js";
+export class OpenRouter {
+    name = 'openrouter';
+    apiKey;
+    apiKeyRequired = true;
+    apiKeyHelpUrl = "https://aistudio.google.com/app/apikey";
+    model;
+    openrouter;
+    aiModel;
+    models = [
+        'deepseek/deepseek-coder',
+        'google/gemini-flash-1.5',
+        'google/gemini-pro-1.5',
+        'mistralai/mistral-nemo',
+        'qwen/qwen-110b-cha',
+        'cohere/command'
+    ];
+    async init() {
+        const config = await loadConfig(this.name);
+        this.model = config?.defaultModel;
+        if (config?.apiKey) {
+            this.apiKey = config?.apiKey;
+        }
+        else {
+            await this.setApiKey(config?.apiKey || '');
+        }
+        this.createOpenRouter();
+    }
+    createOpenRouter() {
+        this.openrouter = createOpenRouter({
+            apiKey: this.apiKey
+        });
+        this.createAiModel();
+    }
+    createAiModel() {
+        if (this.model) {
+            if (this.openrouter) {
+                // @ts-ignore
+                this.aiModel = this.openrouter(this.model);
+            }
+            else {
+                throw new Error("something went wrong try again later ..");
+            }
+        }
+    }
+    getModels() {
+        return Promise.resolve(this.models);
+    }
+    checkApiKey() {
+        return Promise.resolve(!!this.apiKey);
+    }
+    async setApiKey(key) {
+        await saveConfig({ apiKey: key }, this.name);
+        this.apiKey = key;
+        this.createOpenRouter();
+    }
+    async setModel(model) {
+        //check model is in the list of models
+        if (!this.models.includes(model)) {
+            throw new Error("Invalid model");
+        }
+        await saveConfig({ defaultModel: model }, this.name);
+        this.model = model;
+        this.createAiModel();
+    }
+    async runPrompt(prompt, model) {
+        if (!this.aiModel && model) {
+            await this.setModel(model);
+        }
+        if (this.aiModel) {
+            const { text } = await generateText({
+                model: this.aiModel,
+                prompt: prompt
+            });
+            return text;
+        }
+        throw new Error("Model not selected");
+    }
+}
+
+./dist/index.js
+#!/usr/bin/env node
+import { Command } from '@commander-js/extra-typings';
+import { confirm, select } from '@inquirer/prompts';
+import simpleGit from 'simple-git';
+import chalk from 'chalk';
+import loading from "loading-cli";
+import { openEditor } from "./utils/editor.js";
+import { Prompt } from "./utils/prompt.js";
+const git = simpleGit(process.cwd());
+const program = new Command();
+const prompt = new Prompt();
+await prompt.init();
+program
+    .name('commita')
+    .description('CLI app for Git status, changes, and commit suggestions')
+    .version('1.0.0');
+async function getGitStatus() {
+    return git.status();
+}
+async function getGitChanges() {
+    return git.diff();
+}
+async function suggestAndCommit(options) {
+    while (!prompt.provider) {
+        await prompt.selectProvider();
+    }
+    while (!prompt.model) {
+        await prompt.selectModel();
+    }
+    let load = loading(chalk.yellow('Suggesting commit message...')).start();
+    try {
+        const changes = await getGitChanges();
+        const suggestedMessage = await prompt.suggestCommitMessage(changes);
+        load.stop();
+        if (!suggestedMessage) {
+            console.log(chalk.red('No commit message suggested.'));
+            return;
+        }
+        console.log(chalk.green(suggestedMessage));
+        // let force = false;
+        /*if (options.commit && options.push) {
+          force = options.force || await confirm({
+            message: 'Commit and push changes?',
+            default: true,
+          });
+        }*/
+        let runCommit = (options.commit && !!options.force) ? 'commit' : 'abort';
+        if (options.commit && !options.force) {
+            runCommit = await select({
+                message: 'Use this as the commit message?',
+                choices: [
+                    { value: "commit", name: "commit", description: "Yes, commit the changes" },
+                    { value: "abort", name: "abort", description: "No, abort the commit" },
+                    {
+                        value: "edit",
+                        name: "edit",
+                        description: "Edit the commit message manually",
+                    },
+                ],
+            });
+            if (runCommit == 'abort') {
+                console.log(chalk.yellow('Commit aborted.'));
+            }
+        }
+        if (runCommit == 'commit' || runCommit == 'edit') {
+            const message = (runCommit === 'edit') ? await openEditor(suggestedMessage, '.commit_message.txt') : suggestedMessage;
+            await git.add('.');
+            await git.commit(message.trim());
+            console.log(chalk.green('Changes committed successfully!'));
+        }
+        let runPush = options.push && !!options.force;
+        if (options.push && !options.force) {
+            runPush = await confirm({
+                message: 'Push changes to remote repository?',
+                default: true,
+            });
+            if (!runPush) {
+                console.log(chalk.yellow('Changes not pushed to remote repository.'));
+            }
+        }
+        if (runPush) {
+            load.stop();
+            load = loading(chalk.yellow('Pushing changes to remote repository...')).start();
+            const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
+            await git.push('origin', branchName);
+            load.stop();
+            console.log(chalk.green(`Changes pushed to ${branchName}`));
+        }
+    }
+    catch (error) {
+        console.error(chalk.red('Error suggesting commit message:', error));
+        load.stop();
+    }
+}
+program
+    .command('status')
+    .description('Check the status of the Git repository')
+    .action(async () => {
+    try {
+        const status = await getGitStatus();
+        console.log(chalk.blue('Git Status:'));
+        console.log(chalk.green(`Branch: ${status.current}`));
+        console.log(chalk.yellow(`Modified files: ${status.modified.join(', ')}`));
+        console.log(chalk.red(`Deleted files: ${status.deleted.join(', ')}`));
+        console.log(chalk.cyan(`New files: ${status.not_added.join(', ')}`));
+    }
+    catch (error) {
+        console.error(chalk.red('Error getting Git status:', error));
+    }
+});
+program
+    .command('changes')
+    .description('View all changes in the Git repository')
+    .action(async () => {
+    try {
+        const changes = await getGitChanges();
+        console.log(chalk.blue('Git Changes:'));
+        console.log(changes);
+    }
+    catch (error) {
+        console.error(chalk.red('Error getting Git changes:', error));
+    }
+});
+program
+    .command('suggest-commit', { isDefault: true })
+    .description('Suggest a commit message based on current changes')
+    .option('-c, --commit', 'Commit the changes')
+    .option('-p, --push', 'Push changes to remote repository')
+    .option('-f, --force', 'Force commit or push without prompting')
+    .action((options) => suggestAndCommit(options));
+program
+    .command('branch')
+    .description('Create a new branch')
+    .argument('<name>', 'Name of the new branch')
+    .action(async (name) => {
+    try {
+        await git.checkoutLocalBranch(name);
+        console.log(chalk.green(`Created and switched to new branch: ${name}`));
+    }
+    catch (error) {
+        console.error(chalk.red('Error creating new branch:', error));
+    }
+});
+program
+    .command('push')
+    .description('Push changes to remote repository')
+    .option('-b, --branch <name>', 'Specify the branch to push')
+    .action(async (options) => {
+    try {
+        const branchName = options.branch || await git.revparse(['--abbrev-ref', 'HEAD']);
+        await git.push('origin', branchName);
+        console.log(chalk.green(`Successfully pushed changes to ${branchName}`));
+    }
+    catch (error) {
+        console.error(chalk.red('Error pushing changes:', error));
+    }
+});
+program
+    .command('model')
+    .description('Change or remove the default model')
+    .action(args => prompt.changeModel(true));
+program
+    .command('prompt')
+    .description('View or Change the default prompt')
+    .action(args => prompt.changePrompt());
+program.parse();
+
+./dist/utils/prompt.js
+import { select, confirm, input } from '@inquirer/prompts';
+import chalk from "chalk";
+import { Ollama } from "../models/ollama.js";
+import { DEFAULT_PROMPT, loadConfig, saveConfig } from "./config.js";
+import { Google } from "../models/google.js";
+import { OpenRouter } from "../models/openrouter.js";
+import { openEditor } from "./editor.js";
+const ollama = new Ollama();
+const google = new Google();
+const openrouter = new OpenRouter();
+export class Prompt {
+    providers = [];
+    provider;
+    model;
+    prompt;
+    constructor() {
+        this.providers.push(ollama);
+        this.providers.push(google);
+        this.providers.push(openrouter);
+        this.prompt = DEFAULT_PROMPT;
+    }
+    async init() {
+        // get default provider from config
+        const config = await loadConfig();
+        const defaultProvider = config.defaultProvider;
+        this.provider = this.providers.find(provider => provider.name === defaultProvider);
+        this.prompt = config.prompt || DEFAULT_PROMPT;
+        await this.prepareProvider();
+    }
+    async prepareProvider() {
+        await this.provider?.init();
+        this.model = this.provider?.model;
+        await saveConfig({ defaultModel: this.provider?.model });
+        while (this.provider?.apiKeyRequired && !(await this.provider?.checkApiKey())) {
+            // show help on how to get an api key
+            console.log(`You can get an API key from the ${this.provider?.name} website.`);
+            console.log(this.provider?.apiKeyHelpUrl);
+            const apiKey = await input({
+                message: 'Enter your API key:',
+            });
+            await this.provider?.setApiKey(apiKey);
+            if (!(await this.provider?.checkApiKey())) {
+                console.log(chalk.red('Invalid API key. Please try again.'));
+            }
+        }
+    }
+    async selectProvider(setDefault = false) {
+        // if no providers exit the app
+        if (this.providers.length === 0) {
+            console.log(chalk.red('No AI providers available.'));
+            process.exit(1);
+        }
+        const selectedProvider = await select({
+            message: 'Select an AI provider:',
+            choices: this.providers.map(provider => ({ value: provider.name, name: provider.name })),
+        });
+        this.provider = this.providers.find(provider => provider.name === selectedProvider);
+        await this.prepareProvider();
+        const setAsDefault = setDefault || await confirm({ message: 'Set this provider as default?' });
+        if (setAsDefault) {
+            await saveConfig({ defaultProvider: selectedProvider });
+        }
+    }
+    async selectModel(ignoreDefault = false, setDefault = false) {
+        while (!this.provider) {
+            await this.selectProvider();
+        }
+        if (this.model && !ignoreDefault) {
+            return;
+        }
+        const availableModels = await this.provider.getModels();
+        const selectedModel = await select({
+            message: 'Select a model to use:',
+            choices: availableModels.map(model => ({ value: model, name: model })),
+        });
+        const setAsDefault = setDefault || await confirm({ message: 'Set this model as default?' });
+        if (setAsDefault) {
+            console.log('Setting default model for ', this.provider.name, ' to ', selectedModel);
+            await this.provider.setModel(selectedModel);
+            await saveConfig({ defaultModel: selectedModel });
+            this.model = selectedModel;
+        }
+    }
+    async changeModel(setDefault = false) {
+        const currentDefault = this.model || 'No default model set';
+        console.log(`Current default model: ${currentDefault} (${this.provider?.name || 'No provider set'})`);
+        const action = await select({
+            message: 'What would you like to do?',
+            choices: [
+                { value: 'change', name: 'Change default model' },
+                { value: 'remove', name: 'Remove default model' },
+                { value: 'cancel', name: 'Cancel' },
+            ],
+        });
+        if (action === 'change') {
+            await this.selectProvider(setDefault);
+            await this.selectModel(true, setDefault);
+            console.log(`Model changed to: ${this.model}`);
+        }
+        else if (action === 'remove') {
+            await saveConfig({
+                defaultModel: undefined,
+                defaultProvider: undefined
+            });
+            console.log('Default model removed');
+        }
+        else {
+            console.log('Operation cancelled');
+        }
+    }
+    async changePrompt() {
+        // show the user the current prompt
+        console.log(`Current prompt: ${this.prompt}`);
+        // check if the user want to change the prompt
+        const changePrompt = await confirm({ message: 'Do you want to change the prompt?' });
+        if (!changePrompt) {
+            return;
+        }
+        const editor = await select({
+            message: 'Select an editor:',
+            choices: [
+                { value: 'vim', name: 'Vim' },
+                { value: 'nano', name: 'Nano' },
+            ],
+        });
+        const newPrompt = await openEditor(this.prompt, '.prompt.txt', editor);
+        this.prompt = newPrompt;
+        await saveConfig({ prompt: newPrompt });
+    }
+    async suggestCommitMessage(changes) {
+        const prompt = `${this.prompt}${changes}`;
+        return this.provider?.runPrompt(prompt);
+    }
+}
+
+./dist/utils/editor.js
+import { spawn } from 'child_process';
+import fs from 'fs/promises';
+import chalk from "chalk";
+import path from "path";
+import simpleGit from "simple-git";
+import { promisify } from "util";
+const execAsync = promisify(spawn);
+const git = simpleGit();
+export async function openEditor(content, file, editor) {
+    // get the default editor
+    const gitEditor = await git.getConfig("core.editor", 'global');
+    const tempFilePath = path.join(process.cwd(), file);
+    // Write the current message (if any) to a temporary file
+    await fs.writeFile(tempFilePath, content);
+    try {
+        if (editor) {
+            await promisifiedSpawn(editor, [tempFilePath], { stdio: 'inherit' });
+        }
+        else if (gitEditor.value) {
+            await promisifiedSpawn(gitEditor.value, [tempFilePath], { stdio: 'inherit' });
+        }
+        else {
+            console.error(chalk.red('No editor specified.'));
+        }
+        // Read the message back from the temporary file
+        const finalMessage = await fs.readFile(tempFilePath, 'utf-8');
+        // Delete the temporary file after reading
+        await fs.unlink(tempFilePath);
+        return finalMessage;
+    }
+    catch (error) {
+        console.error(chalk.red('Error opening editor:', error.message));
+        return ''; // Return an empty string if there's an error
+    }
+}
+function promisifiedSpawn(command, args, options) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, options);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve(code);
+            }
+            else {
+                reject(new Error(`Process exited with code: ${code}`));
+            }
+        });
+        child.on('error', (error) => {
+            reject(error);
+        });
+    });
+}
+
+./dist/utils/config.js
+import path from "path";
+import os from "os";
+import chalk from "chalk";
+import { JSONFilePreset } from 'lowdb/node';
+import fs from "fs/promises";
+const DEFAULT_PROMPT = 'Based on these Git changes, suggest a commit message. Give me only the commit message with no explanations or extra text:\nChanges:\n\n';
+const defaultData = {
+    prompt: DEFAULT_PROMPT,
+};
+const homedir = os.homedir();
+const CONFIG_DIR = path.join(homedir, '.config', 'commita');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+async function ensureConfigFileExists() {
+    try {
+        await fs.mkdir(CONFIG_DIR, { recursive: true }); // Creates the directory if it doesn't exist
+        try {
+            await fs.access(CONFIG_FILE); // Check if the config file exists
+        }
+        catch (error) {
+            // File doesn't exist, create it with default content
+            await fs.writeFile(CONFIG_FILE, JSON.stringify(defaultData, null, 2));
+        }
+    }
+    catch (error) {
+        console.error(chalk.red('Error ensuring config file exists:', error.message));
+    }
+}
+export async function loadConfig(key) {
+    await ensureConfigFileExists();
+    try {
+        const db = await JSONFilePreset(CONFIG_FILE, defaultData);
+        const config = db.data;
+        // If a specific key is requested, return only that part of the config
+        if (key) {
+            return (config[key] ?? undefined) || undefined;
+        }
+        // Return the entire configuration if no key is specified
+        return config;
+    }
+    catch (error) {
+        console.error(chalk.red('Error loading configuration:', error.message));
+        return {};
+    }
+}
+export async function saveConfig(config, key) {
+    await ensureConfigFileExists();
+    const db = await JSONFilePreset(CONFIG_FILE, defaultData);
+    let currentConfig = db.data;
+    try {
+        // Update or replace the configuration for a model
+        if (key) {
+            const currentKeyConfig = (currentConfig[key] || {});
+            // check if currentConfig[key] exist
+            if (!currentConfig[key]) {
+                currentConfig[key] = config;
+            }
+            else {
+                currentConfig[key] = {
+                    ...currentKeyConfig,
+                    ...config
+                };
+            }
+            db.data = currentConfig;
+        }
+        else {
+            db.data = {
+                ...currentConfig, ...config
+            };
+        }
+        // Save the updated configuration
+        await db.write();
+    }
+    catch (error) {
+        console.error(chalk.red('Error saving configuration:', error.message));
+    }
+}
+export { DEFAULT_PROMPT };
+
+./LICENSE
+MIT License
+
+Copyright (c) [YEAR] [YOUR NAME]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+2. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+./package.json
+{
+  "name": "commita",
+  "version": "1.0.0",
+  "description": "CLI app for Git status, changes, and commit suggestions",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "commita": "./dist/index.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "tsc -w",
+    "lint": "eslint . --ext .ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "yarn build"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^0.0.52",
+    "@commander-js/extra-typings": "^12.1.0",
+    "@inquirer/prompts": "^7.0.0",
+    "@openrouter/ai-sdk-provider": "^0.0.5",
+    "ai": "^3.4.14",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "loading-cli": "^1.1.2",
+    "lowdb": "^7.0.1",
+    "ollama": "^0.5.9",
+    "simple-git": "^3.27.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.6",
+    "@typescript-eslint/eslint-plugin": "^8.9.0",
+    "@typescript-eslint/parser": "^8.9.0",
+    "eslint": "^9.12.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "git",
+    "cli",
+    "commit",
+    "suggestion"
+  ],
+  "author": "Mohamed Slimani",
+  "license": "MIT"
+}
+
+./README.md
+# Commita
+
+Commita is a powerful CLI tool that enhances your Git workflow by providing intelligent commit message suggestions, streamlined status checks, and easy branch management. Leveraging the Ollama AI model, commita offers context-aware commit message recommendations based on your changes.
+
+## Features
+
+- 🤖 AI-powered commit message suggestions
+- 📊 Quick Git status overview
+- 🔍 Detailed view of repository changes
+- 🌿 Easy branch creation and management
+- 🚀 Simplified push operations
+- 🔄 Customizable AI model selection
+
+## Installation
+
+To install commita globally, run:
+
+```bash
+npm install -g commita
+```
+
+Make sure you have Node.js version 14 or higher installed on your system.
+
+## Usage
+
+### Suggest Commit Message (Default Command)
+
+To get an AI-suggested commit message based on your current changes:
+
+```bash
+commita
+```
+
+or
+
+```bash
+commita suggest-commit
+```
+
+### Check Git Status
+
+To view the status of your Git repository:
+
+```bash
+commita status
+```
+
+### View Changes
+
+To see all changes in your Git repository:
+
+```bash
+commita changes
+```
+
+### Create a New Branch
+
+To create and switch to a new branch:
+
+```bash
+commita branch <branch-name>
+```
+
+### Push Changes
+
+To push changes to the remote repository:
+
+```bash
+commita push
+```
+
+To push to a specific branch:
+
+```bash
+commita push -b <branch-name>
+```
+
+### Manage AI Model
+
+To change or remove the default Ollama model:
+
+```bash
+commita model
+```
+
+## Configuration
+
+commita uses a configuration file (`.commita-config.json`) in your current working directory to store settings such as the default AI model. This file is automatically created and managed by the CLI.
+
+## Requirements
+
+- Node.js >= 18.0.0
+- Git
+- Ollama (for AI-powered suggestions) and models installed
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- This project uses [Ollama](https://github.com/jmorganca/ollama) for AI-powered commit message suggestions.
+- Built with [Commander.js](https://github.com/tj/commander.js/) for CLI structure.
+- Uses [simple-git](https://github.com/steveukx/git-js) for Git operations.
+
+## Author
+
+[Mohamed Slimani](https://github.com/slimani-dev)
+
+---
+
+Happy committing with commita! 🚀
+
+./output.txt
+./src/models/ai-provider.ts
+export interface AiProvider {
+  /**
+   * The name of the AI provider.
+   */
+  name: string;
+
+  /**
+   * The API key used for authentication with the AI provider.
+   */
+  apiKey?: string;
+
+  /**
+   * Indicates whether an API key is required for authentication.
+   */
+
+  apiKeyRequired: boolean;
+
+  /**
+   * a helper link to the docs on how to get an api key.
+   */
+
+  apiKeyHelpUrl?: string;
+
+  /**
+   * The default model used by the provider if no specific model is requested.
+   */
+  model?: string;
+
+  /**
+   * Initializes the AI provider by performing any necessary setup or authentication.
+   */
+  init(): Promise<void>
+
+  /**
+   * Returns a list of available models.
+   */
+  getModels(): Promise<string[]>;
+
+  /**
+   * Sets the API key for authentication.
+   * @param key - The API key to authenticate requests.
+   */
+  setApiKey(key: string): Promise<void>;
+
+  /**
+   * Check if api key is valid
+   */
+
+  checkApiKey(): Promise<boolean>;
+
+  /**
+   * Sets the default model for the provider.
+   * @param model - The name of the model to set as the default.
+   */
+  setModel(model: string): Promise<void>;
+
+  /**
+   * Executes a prompt using the specified model and returns the generated response.
+   * @param prompt - The prompt or input text to process.
+   * @param model - (Optional) The name of the model to use; uses model if not provided.
+   * @returns A promise that resolves to the generated response as a string.
+   */
+  runPrompt(prompt: string, model?: string): Promise<string>;
+}
+
+./src/models/ollama.ts
+import {Ollama as OllamaProvider} from 'ollama';
+import {type AiProvider} from "./ai-provider";
+import {loadConfig, saveConfig} from "../utils/config.js";
+
+export class Ollama implements AiProvider {
+  name: string = "ollama";
+  apiKeyRequired = false;
+  apiKey?: string;
+  model?: string;
+  private ollama: OllamaProvider
+
+  constructor() {
+    this.ollama = new OllamaProvider();
+  }
+
+
+  async init() {
+    const config = await loadConfig(this.name);
+    this.model = config?.defaultModel;
+  }
+
+  async getModels(): Promise<string[]> {
+    const response = await this.ollama.list();
+    return response.models.map(model => model.name);
+  }
+
+  async setApiKey(key: string) {
+    throw new Error('Method not implemented.');
+  }
+
+  checkApiKey(): Promise<boolean> {
+    throw new Error('Method not implemented.');
+  }
+
+  async setModel(model: string) {
+    this.model = model;
+    return saveConfig({defaultModel: model}, this.name);
+  }
+
+  async runPrompt(prompt: string, model: string): Promise<string> {
+    if (!this.model && model) {
+      await this.setModel(model)
+    }
+
+    if (this.model) {
+      const response = await this.ollama.chat({
+        model: this.model,
+        messages: [
+          {role: 'user', content: prompt}
+        ],
+        stream: false,
+      });
+      return response.message.content.trim();
+    }
+
+    throw new Error("Model not selected");
+  }
+
+}
+
+./src/models/openrouter.ts
+import type {AiProvider} from "./ai-provider";
+import {generateText, LanguageModel} from "ai"
+import {createOpenRouter, OpenRouterProvider} from "@openrouter/ai-sdk-provider";
+import {loadConfig, saveConfig} from "../utils/config.js";
+
+
+export class OpenRouter implements AiProvider {
+  name = 'openrouter';
+  apiKey?: string | undefined;
+  apiKeyRequired = true;
+  apiKeyHelpUrl = "https://aistudio.google.com/app/apikey";
+  model?: string | undefined;
+
+  private openrouter?: OpenRouterProvider
+  private aiModel?: LanguageModel;
+  private models = [
+    'deepseek/deepseek-coder',
+    'google/gemini-flash-1.5',
+    'google/gemini-pro-1.5',
+    'mistralai/mistral-nemo',
+    'qwen/qwen-110b-cha',
+    'cohere/command'
+  ];
+
+  async init(): Promise<void> {
+    const config = await loadConfig(this.name);
+    this.model = config?.defaultModel;
+
+    if (config?.apiKey) {
+      this.apiKey = config?.apiKey
+    } else {
+      await this.setApiKey(config?.apiKey || '')
+    }
+
+    this.createOpenRouter();
+  }
+
+  private createOpenRouter() {
+    this.openrouter = createOpenRouter({
+      apiKey: this.apiKey
+    })
+
+    this.createAiModel()
+  }
+
+  private createAiModel() {
+    if (this.model) {
+      if (this.openrouter) {
+        // @ts-ignore
+        this.aiModel = this.openrouter(this.model);
+      } else {
+        throw new Error("something went wrong try again later ..");
+      }
+    }
+  }
+
+  getModels(): Promise<string[]> {
+    return Promise.resolve(this.models)
+  }
+
+  checkApiKey(): Promise<boolean> {
+    return Promise.resolve(!!this.apiKey);
+  }
+
+  async setApiKey(key: string): Promise<void> {
+    await saveConfig({apiKey: key}, this.name)
+    this.apiKey = key
+
+    this.createOpenRouter();
+  }
+
+  async setModel(model: string) {
+    //check model is in the list of models
+    if (!this.models.includes(model)) {
+      throw new Error("Invalid model");
+    }
+
+    await saveConfig({defaultModel: model}, this.name);
+    this.model = model;
+
+    this.createAiModel();
+  }
+
+  async runPrompt(prompt: string, model?: string): Promise<string> {
+
+    if (!this.aiModel && model) {
+      await this.setModel(model)
+    }
+
+    if (this.aiModel) {
+      const {text} = await generateText({
+        model: this.aiModel,
+        prompt: prompt
+      })
+      return text;
+    }
+
+    throw new Error("Model not selected");
+  }
+}
+
+./src/models/google.ts
+import type {AiProvider} from "./ai-provider";
+import {generateText, LanguageModel} from "ai"
+import {createGoogleGenerativeAI, GoogleGenerativeAIProvider} from "@ai-sdk/google"
+import {loadConfig, saveConfig} from "../utils/config.js";
+
+
+export class Google implements AiProvider {
+  name = 'google';
+  apiKey?: string | undefined;
+  apiKeyRequired = true;
+  apiKeyHelpUrl = "https://aistudio.google.com/app/apikey";
+  model?: string | undefined;
+
+  private google?: GoogleGenerativeAIProvider
+  private gemini?: LanguageModel;
+  private models = [
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro-latest',
+  ];
+
+  async init(): Promise<void> {
+    const config = await loadConfig(this.name);
+    this.model = config?.defaultModel;
+
+    if (config?.apiKey) {
+      this.apiKey = config?.apiKey
+    } else {
+      await this.setApiKey(config?.apiKey || '')
+    }
+
+    this.createGoogle()
+
+  }
+
+  private createGoogle() {
+    this.google = createGoogleGenerativeAI({
+      apiKey: this.apiKey
+    })
+
+    this.createGeminiModel();
+  }
+
+  private createGeminiModel() {
+    if (this.model) {
+      if (this.google) {
+        this.gemini = this.google(this.model);
+      } else {
+        throw new Error("something went wrong try again later ..");
+      }
+    }
+  }
+
+  getModels(): Promise<string[]> {
+    return Promise.resolve(this.models)
+  }
+
+  checkApiKey(): Promise<boolean> {
+    return Promise.resolve(!!this.apiKey);
+  }
+
+  async setApiKey(key: string): Promise<void> {
+    await saveConfig({apiKey: key}, this.name)
+    this.apiKey = key
+
+    this.createGoogle()
+  }
+
+  async setModel(model: string) {
+    //check model is in the list of models
+    if (!this.models.includes(model)) {
+      throw new Error("Invalid model");
+    }
+
+    await saveConfig({defaultModel: model}, this.name);
+    this.model = model;
+
+    this.createGeminiModel()
+  }
+
+  async runPrompt(prompt: string, model?: string): Promise<string> {
+
+    if (!this.gemini && model) {
+      await this.setModel(model)
+    }
+
+    if (this.gemini) {
+      const {text} = await generateText({
+        model: this.gemini,
+        prompt: prompt
+      })
+      return text;
+    }
+
+    throw new Error("Model not selected");
+  }
+}
+
+./src/index.ts
+#!/usr/bin/env node
+
+import {Command} from '@commander-js/extra-typings';
+import {confirm, select} from '@inquirer/prompts';
+import simpleGit, {SimpleGit} from 'simple-git';
+import chalk from 'chalk';
+import loading from "loading-cli";
+import {openEditor} from "./utils/editor.js";
+import {Prompt} from "./utils/prompt.js";
+
+const git: SimpleGit = simpleGit(process.cwd());
+
+const program = new Command();
+const prompt = new Prompt()
+await prompt.init()
+
+program
+    .name('commita')
+    .description('CLI app for Git status, changes, and commit suggestions')
+    .version('1.0.0');
+
+async function getGitStatus() {
+  return git.status();
+}
+
+async function getGitChanges() {
+  return git.diff();
+}
+
+async function suggestAndCommit(
+    options: { commit?: true | undefined, push?: true | undefined, force?: true | undefined }
+) {
+
+  while (!prompt.provider) {
+    await prompt.selectProvider()
+  }
+
+  while (!prompt.model) {
+    await prompt.selectModel();
+  }
+
+  let load = loading(chalk.yellow('Suggesting commit message...')).start()
+  try {
+    const changes = await getGitChanges();
+    const suggestedMessage = await prompt.suggestCommitMessage(changes);
+    load.stop()
+
+    if (!suggestedMessage) {
+      console.log(chalk.red('No commit message suggested.'));
+      return;
+    }
+
+    console.log(chalk.green(suggestedMessage));
+
+    // let force = false;
+
+    /*if (options.commit && options.push) {
+      force = options.force || await confirm({
+        message: 'Commit and push changes?',
+        default: true,
+      });
+    }*/
+
+    let runCommit: 'commit' | 'abort' | 'edit' = (options.commit && !!options.force) ? 'commit' : 'abort';
+
+    if (options.commit && !options.force) {
+      runCommit = await select({
+        message: 'Use this as the commit message?',
+        choices: [
+          {value: "commit", name: "commit", description: "Yes, commit the changes"},
+          {value: "abort", name: "abort", description: "No, abort the commit"},
+          {
+            value: "edit",
+            name: "edit",
+            description: "Edit the commit message manually",
+          },
+        ],
+      });
+
+      if (runCommit == 'abort') {
+        console.log(chalk.yellow('Commit aborted.'));
+      }
+    }
+
+    if (runCommit == 'commit' || runCommit == 'edit') {
+      const message = (runCommit === 'edit') ? await openEditor(suggestedMessage, '.commit_message.txt') : suggestedMessage;
+      await git.add('.')
+      await git.commit(message.trim());
+      console.log(chalk.green('Changes committed successfully!'));
+    }
+
+    let runPush = options.push && !!options.force;
+
+    if (options.push && !options.force) {
+      runPush = await confirm({
+        message: 'Push changes to remote repository?',
+        default: true,
+      });
+
+      if (!runPush) {
+        console.log(chalk.yellow('Changes not pushed to remote repository.'));
+      }
+    }
+
+    if (runPush) {
+      load.stop()
+      load = loading(chalk.yellow('Pushing changes to remote repository...')).start()
+      const branchName = await git.revparse(['--abbrev-ref', 'HEAD']);
+      await git.push('origin', branchName);
+      load.stop()
+      console.log(chalk.green(`Changes pushed to ${branchName}`));
+    }
+
+  } catch (error) {
+    console.error(chalk.red('Error suggesting commit message:', error));
+    load.stop()
+  }
+}
+
+program
+    .command('status')
+    .description('Check the status of the Git repository')
+    .action(async () => {
+      try {
+        const status = await getGitStatus();
+        console.log(chalk.blue('Git Status:'));
+        console.log(chalk.green(`Branch: ${status.current}`));
+        console.log(chalk.yellow(`Modified files: ${status.modified.join(', ')}`));
+        console.log(chalk.red(`Deleted files: ${status.deleted.join(', ')}`));
+        console.log(chalk.cyan(`New files: ${status.not_added.join(', ')}`));
+      } catch (error) {
+        console.error(chalk.red('Error getting Git status:', error));
+      }
+    });
+
+program
+    .command('changes')
+    .description('View all changes in the Git repository')
+    .action(async () => {
+      try {
+        const changes = await getGitChanges();
+        console.log(chalk.blue('Git Changes:'));
+        console.log(changes);
+      } catch (error) {
+        console.error(chalk.red('Error getting Git changes:', error));
+      }
+    });
+
+program
+    .command('suggest-commit', {isDefault: true})
+    .description('Suggest a commit message based on current changes')
+    .option('-c, --commit', 'Commit the changes')
+    .option('-p, --push', 'Push changes to remote repository')
+    .option('-f, --force', 'Force commit or push without prompting')
+    .action((options) => suggestAndCommit(options));
+
+program
+    .command('branch')
+    .description('Create a new branch')
+    .argument('<name>', 'Name of the new branch')
+    .action(async (name: string) => {
+      try {
+        await git.checkoutLocalBranch(name);
+        console.log(chalk.green(`Created and switched to new branch: ${name}`));
+      } catch (error) {
+        console.error(chalk.red('Error creating new branch:', error));
+      }
+    });
+
+program
+    .command('push')
+    .description('Push changes to remote repository')
+    .option('-b, --branch <name>', 'Specify the branch to push')
+    .action(async (options) => {
+      try {
+        const branchName = options.branch || await git.revparse(['--abbrev-ref', 'HEAD']);
+        await git.push('origin', branchName);
+        console.log(chalk.green(`Successfully pushed changes to ${branchName}`));
+      } catch (error) {
+        console.error(chalk.red('Error pushing changes:', error));
+      }
+    });
+
+program
+    .command('model')
+    .description('Change or remove the default model')
+    .action(args => prompt.changeModel(true));
+
+program
+    .command('prompt')
+    .description('View or Change the default prompt')
+    .action(args => prompt.changePrompt());
+
+program.parse();
+
+./src/utils/prompt.ts
+import {select, confirm, input} from '@inquirer/prompts';
+import chalk from "chalk";
+import {Ollama} from "../models/ollama.js";
+import {DEFAULT_PROMPT, loadConfig, saveConfig} from "./config.js";
+import {AiProvider} from "../models/ai-provider";
+import {Google} from "../models/google.js";
+import {OpenRouter} from "../models/openrouter.js";
+import {openEditor} from "./editor.js";
+
+const ollama = new Ollama()
+const google = new Google()
+const openrouter = new OpenRouter()
+
+export class Prompt {
+  providers: AiProvider[] = [];
+
+  provider?: AiProvider;
+  model?: string;
+  prompt: string;
+
+  constructor() {
+    this.providers.push(ollama);
+    this.providers.push(google);
+    this.providers.push(openrouter);
+    this.prompt = DEFAULT_PROMPT;
+  }
+
+  async init() {
+    // get default provider from config
+    const config = await loadConfig();
+    const defaultProvider = config.defaultProvider;
+    this.provider = this.providers.find(provider => provider.name === defaultProvider);
+
+    this.prompt = config.prompt || DEFAULT_PROMPT
+
+    await this.prepareProvider();
+  }
+
+  async prepareProvider() {
+    await this.provider?.init();
+    this.model = this.provider?.model;
+    await saveConfig({defaultModel: this.provider?.model});
+
+    while (this.provider?.apiKeyRequired && !(await this.provider?.checkApiKey())) {
+      // show help on how to get an api key
+      console.log(`You can get an API key from the ${this.provider?.name} website.`);
+      console.log(this.provider?.apiKeyHelpUrl);
+
+      const apiKey = await input({
+        message: 'Enter your API key:',
+      });
+
+      await this.provider?.setApiKey(apiKey);
+
+      if (!(await this.provider?.checkApiKey())) {
+        console.log(chalk.red('Invalid API key. Please try again.'));
+      }
+    }
+  }
+
+  async selectProvider(setDefault = false): Promise<void> {
+
+    // if no providers exit the app
+    if (this.providers.length === 0) {
+      console.log(chalk.red('No AI providers available.'));
+      process.exit(1);
+    }
+
+    const selectedProvider = await select({
+      message: 'Select an AI provider:',
+      choices: this.providers.map(provider => ({value: provider.name, name: provider.name})),
+    });
+
+    this.provider = this.providers.find(provider => provider.name === selectedProvider);
+    await this.prepareProvider();
+
+    const setAsDefault = setDefault || await confirm({message: 'Set this provider as default?'});
+    if (setAsDefault) {
+      await saveConfig({defaultProvider: selectedProvider});
+    }
+  }
+
+  async selectModel(ignoreDefault = false, setDefault = false): Promise<void> {
+    while (!this.provider) {
+      await this.selectProvider()
+    }
+
+    if (this.model && !ignoreDefault) {
+      return;
+    }
+
+    const availableModels = await this.provider.getModels();
+    const selectedModel = await select({
+      message: 'Select a model to use:',
+      choices: availableModels.map(model => ({value: model, name: model})),
+    });
+
+    const setAsDefault = setDefault || await confirm({message: 'Set this model as default?'});
+    if (setAsDefault) {
+      console.log('Setting default model for ', this.provider.name, ' to ', selectedModel)
+      await this.provider.setModel(selectedModel);
+      await saveConfig({defaultModel: selectedModel});
+      this.model = selectedModel;
+    }
+  }
+
+  async changeModel(setDefault = false): Promise<void> {
+    const currentDefault = this.model || 'No default model set';
+
+    console.log(`Current default model: ${currentDefault} (${this.provider?.name || 'No provider set'})`);
+
+    const action = await select({
+      message: 'What would you like to do?',
+      choices: [
+        {value: 'change', name: 'Change default model'},
+        {value: 'remove', name: 'Remove default model'},
+        {value: 'cancel', name: 'Cancel'},
+      ],
+    });
+
+    if (action === 'change') {
+      await this.selectProvider(setDefault);
+      await this.selectModel(true, setDefault);
+      console.log(`Model changed to: ${this.model}`);
+    } else if (action === 'remove') {
+      await saveConfig({
+        defaultModel: undefined,
+        defaultProvider: undefined
+      });
+      console.log('Default model removed');
+    } else {
+      console.log('Operation cancelled');
+    }
+  }
+
+  async changePrompt(): Promise<void> {
+    // show the user the current prompt
+    console.log(`Current prompt: ${this.prompt}`);
+
+    // check if the user want to change the prompt
+    const changePrompt = await confirm({message: 'Do you want to change the prompt?'});
+    if (!changePrompt) {
+      return;
+    }
+
+    const editor = await select({
+      message: 'Select an editor:',
+      choices: [
+        {value: 'vim', name: 'Vim'},
+        {value: 'nano', name: 'Nano'},
+      ],
+    })
+
+    const newPrompt = await openEditor(this.prompt, '.prompt.txt', editor);
+
+    this.prompt = newPrompt;
+    await saveConfig({prompt: newPrompt});
+  }
+
+  async suggestCommitMessage(changes: string): Promise<string | undefined> {
+
+    const prompt = `${this.prompt}${changes}`
+
+    return this.provider?.runPrompt(prompt)
+  }
+}
+
+./src/utils/config.ts
+import path from "path";
+import os from "os";
+import chalk from "chalk";
+import {JSONFilePreset} from 'lowdb/node'
+import fs from "fs/promises";
+
+interface ProviderConfig {
+  defaultModel?: string;
+  apiKey?: string;
+}
+
+interface Config {
+  defaultModel?: string;
+  defaultProvider?: string;
+  prompt?: string;
+
+  [key: string]: ProviderConfig | string | undefined;
+}
+
+const DEFAULT_PROMPT = 'Based on these Git changes, suggest a commit message. Give me only the commit message with no explanations or extra text:\nChanges:\n\n'
+const defaultData: Config = {
+  prompt: DEFAULT_PROMPT,
+};
+
+
+const homedir = os.homedir();
+const CONFIG_DIR = path.join(homedir, '.config', 'commita');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+
+async function ensureConfigFileExists() {
+  try {
+    await fs.mkdir(CONFIG_DIR, {recursive: true}); // Creates the directory if it doesn't exist
+
+    try {
+      await fs.access(CONFIG_FILE); // Check if the config file exists
+    } catch (error) {
+      // File doesn't exist, create it with default content
+      await fs.writeFile(CONFIG_FILE, JSON.stringify(defaultData, null, 2));
+    }
+  } catch (error: any) {
+    console.error(chalk.red('Error ensuring config file exists:', error.message));
+  }
+}
+
+
+// Function overloads
+export async function loadConfig(key: string): Promise<ProviderConfig | undefined>;
+export async function loadConfig(): Promise<Config>;
+export async function loadConfig(key?: string): Promise<ProviderConfig | Config | undefined> {
+  await ensureConfigFileExists();
+  try {
+    const db = await JSONFilePreset(CONFIG_FILE, defaultData)
+
+    const config: Config = db.data;
+
+    // If a specific key is requested, return only that part of the config
+    if (key) {
+      return (config[key] ?? undefined) as ProviderConfig || undefined;
+    }
+
+    // Return the entire configuration if no key is specified
+    return config;
+  } catch (error: any) {
+    console.error(chalk.red('Error loading configuration:', error.message));
+    return {};
+  }
+}
+
+export async function saveConfig(config: ProviderConfig, key: string): Promise<void>;
+export async function saveConfig(config: Config): Promise<void>;
+
+export async function saveConfig(config: Config | ProviderConfig, key?: string): Promise<void> {
+  await ensureConfigFileExists();
+  const db = await JSONFilePreset(CONFIG_FILE, defaultData)
+
+  let currentConfig = db.data;
+
+  try {
+
+
+    // Update or replace the configuration for a model
+    if (key) {
+      const currentKeyConfig = (currentConfig[key] || {})  as ProviderConfig;
+      // check if currentConfig[key] exist
+      if (!currentConfig[key]) {
+        currentConfig[key] = config;
+      } else {
+        currentConfig[key] = {
+          ...currentKeyConfig,
+          ...config
+        };
+      }
+
+      db.data = currentConfig;
+    } else {
+      db.data = {
+        ...currentConfig, ...config
+      }
+    }
+
+    // Save the updated configuration
+    await db.write()
+  } catch (error: any) {
+    console.error(chalk.red('Error saving configuration:', error.message));
+  }
+}
+
+export {DEFAULT_PROMPT}
+
+./src/utils/editor.ts
+import {spawn} from 'child_process';
+import fs from 'fs/promises';
+import chalk from "chalk";
+import path from "path";
+import simpleGit, {SimpleGit} from "simple-git";
+import {promisify} from "util";
+import {SpawnOptions} from "node:child_process";
+
+const execAsync = promisify(spawn);
+const git: SimpleGit = simpleGit();
+
+export async function openEditor(content: string, file: string, editor?: string): Promise<string> {
+  // get the default editor
+  const gitEditor = await git.getConfig("core.editor", 'global');
+
+  const tempFilePath = path.join(process.cwd(), file);
+
+  // Write the current message (if any) to a temporary file
+  await fs.writeFile(tempFilePath, content);
+
+  try {
+
+    if (editor) {
+      await promisifiedSpawn(editor, [tempFilePath], {stdio: 'inherit'})
+    } else if (gitEditor.value) {
+      await promisifiedSpawn(gitEditor.value, [tempFilePath], {stdio: 'inherit'})
+    } else {
+      console.error(chalk.red('No editor specified.'))
+    }
+
+
+    // Read the message back from the temporary file
+    const finalMessage = await fs.readFile(tempFilePath, 'utf-8');
+    // Delete the temporary file after reading
+    await fs.unlink(tempFilePath);
+    return finalMessage;
+  } catch (error: any) {
+    console.error(chalk.red('Error opening editor:', error.message));
+    return ''; // Return an empty string if there's an error
+  }
+
+}
+
+function promisifiedSpawn(command: string, args: string[], options: SpawnOptions) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, options);
+
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve(code);
+      } else {
+        reject(new Error(`Process exited with code: ${code}`));
+      }
+    });
+
+    child.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+./tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
+}
+
