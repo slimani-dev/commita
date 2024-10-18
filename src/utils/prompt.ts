@@ -4,9 +4,12 @@ import {Ollama} from "../models/ollama.js";
 import {DEFAULT_PROMPT, loadConfig, saveConfig} from "./config.js";
 import {AiProvider} from "../models/ai-provider";
 import {Google} from "../models/google.js";
+import {OpenRouter} from "../models/openrouter.js";
+import {openEditor} from "./editor.js";
 
 const ollama = new Ollama()
 const google = new Google()
+const openrouter = new OpenRouter()
 
 export class Prompt {
   providers: AiProvider[] = [];
@@ -18,6 +21,7 @@ export class Prompt {
   constructor() {
     this.providers.push(ollama);
     this.providers.push(google);
+    this.providers.push(openrouter);
     this.prompt = DEFAULT_PROMPT;
   }
 
@@ -26,6 +30,8 @@ export class Prompt {
     const config = await loadConfig();
     const defaultProvider = config.defaultProvider;
     this.provider = this.providers.find(provider => provider.name === defaultProvider);
+
+    this.prompt = config.prompt || DEFAULT_PROMPT
 
     await this.prepareProvider();
   }
@@ -125,10 +131,24 @@ export class Prompt {
   }
 
   async changePrompt(): Promise<void> {
-    const newPrompt = await input({
-      message: 'Enter a new prompt:',
-      default: this.prompt,
-    });
+    // show the user the current prompt
+    console.log(`Current prompt: ${this.prompt}`);
+
+    // check if the user want to change the prompt
+    const changePrompt = await confirm({message: 'Do you want to change the prompt?'});
+    if (!changePrompt) {
+      return;
+    }
+
+    const editor = await select({
+      message: 'Select an editor:',
+      choices: [
+        {value: 'vim', name: 'Vim'},
+        {value: 'nano', name: 'Nano'},
+      ],
+    })
+
+    const newPrompt = await openEditor(this.prompt, '.prompt.txt', editor);
 
     this.prompt = newPrompt;
     await saveConfig({prompt: newPrompt});

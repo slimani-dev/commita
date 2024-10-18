@@ -83,9 +83,9 @@ async function suggestAndCommit(
     }
 
     if (runCommit == 'commit' || runCommit == 'edit') {
-      const message = (runCommit === 'edit') ? await openEditor(suggestedMessage) : suggestedMessage;
+      const message = (runCommit === 'edit') ? await openEditor(suggestedMessage, '.commit_message.txt') : suggestedMessage;
       await git.add('.')
-      await git.commit(message);
+      await git.commit(message.trim());
       console.log(chalk.green('Changes committed successfully!'));
     }
 
@@ -182,5 +182,10 @@ program
     .command('model')
     .description('Change or remove the default model')
     .action(args => prompt.changeModel(true));
+
+program
+    .command('prompt')
+    .description('View or Change the default prompt')
+    .action(args => prompt.changePrompt());
 
 program.parse();

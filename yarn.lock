@@ -11,6 +11,16 @@
     "@ai-sdk/provider-utils" "1.0.20"
     json-schema "0.4.0"
 
+"@ai-sdk/provider-utils@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.2.tgz#9ae1b277721b86985aec97a504c655993cce5980"
+  integrity sha512-57f6O4OFVNEpI8Z8o+K40tIB3YQiTw+VCql/qrAO9Utq7Ti1o6+X9tvm177DlZJL7ft0Rwzvgy48S9YhrEKgmA==
+  dependencies:
+    "@ai-sdk/provider" "0.0.12"
+    eventsource-parser "1.1.2"
+    nanoid "3.3.6"
+    secure-json-parse "2.7.0"
+
 "@ai-sdk/provider-utils@1.0.20":
   version "1.0.20"
   resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-1.0.20.tgz#46175945dc32ad2d76cb5447738bcac3ad59dbcb"
@@ -20,6 +30,13 @@
     eventsource-parser "1.1.2"
     nanoid "3.3.6"
     secure-json-parse "2.7.0"
+
+"@ai-sdk/provider@0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-0.0.12.tgz#74d594c1bfd498ac6411610d37aacbf40adabba0"
+  integrity sha512-oOwPQD8i2Ynpn22cur4sk26FW3mSy6t6/X/K1Ay2yGBKYiSpRyLfObhOrZEGsXDx+3euKy4nEZ193R36NM+tpQ==
+  dependencies:
+    json-schema "0.4.0"
 
 "@ai-sdk/provider@0.0.24":
   version "0.0.24"
@@ -350,6 +367,14 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
+
+"@openrouter/ai-sdk-provider@^0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@openrouter/ai-sdk-provider/-/ai-sdk-provider-0.0.5.tgz#d2d053d989695943191a6d3c6005ca783b1ffc0c"
+  integrity sha512-AfxXQhISpxQSeUjU/4jo9waM5GRNX6eIkfTFS9l7vHkD1TKDP81Y/dXrE0ttJeN/Kap3tPF3Jwh49me0gWwjSw==
+  dependencies:
+    "@ai-sdk/provider" "0.0.12"
+    "@ai-sdk/provider-utils" "1.0.2"
 
 "@opentelemetry/api@1.9.0":
   version "1.9.0"

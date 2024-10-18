@@ -1,23 +1,25 @@
 import type {AiProvider} from "./ai-provider";
 import {generateText, LanguageModel} from "ai"
-import {createGoogleGenerativeAI, GoogleGenerativeAIProvider} from "@ai-sdk/google"
+import {createOpenRouter, OpenRouterProvider} from "@openrouter/ai-sdk-provider";
 import {loadConfig, saveConfig} from "../utils/config.js";
 
 
-export class Google implements AiProvider {
-  name = 'google';
+export class OpenRouter implements AiProvider {
+  name = 'openrouter';
   apiKey?: string | undefined;
   apiKeyRequired = true;
   apiKeyHelpUrl = "https://aistudio.google.com/app/apikey";
   model?: string | undefined;
 
-  private google?: GoogleGenerativeAIProvider
-  private gemini?: LanguageModel;
+  private openrouter?: OpenRouterProvider
+  private aiModel?: LanguageModel;
   private models = [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-pro-latest',
+    'deepseek/deepseek-coder',
+    'google/gemini-flash-1.5',
+    'google/gemini-pro-1.5',
+    'mistralai/mistral-nemo',
+    'qwen/qwen-110b-cha',
+    'cohere/command'
   ];
 
   async init(): Promise<void> {
@@ -30,22 +32,22 @@ export class Google implements AiProvider {
       await this.setApiKey(config?.apiKey || '')
     }
 
-    this.createGoogle()
-
+    this.createOpenRouter();
   }
 
-  private createGoogle() {
-    this.google = createGoogleGenerativeAI({
+  private createOpenRouter() {
+    this.openrouter = createOpenRouter({
       apiKey: this.apiKey
     })
 
-    this.createGeminiModel();
+    this.createAiModel()
   }
 
-  private createGeminiModel() {
+  private createAiModel() {
     if (this.model) {
-      if (this.google) {
-        this.gemini = this.google(this.model);
+      if (this.openrouter) {
+        // @ts-ignore
+        this.aiModel = this.openrouter(this.model);
       } else {
         throw new Error("something went wrong try again later ..");
       }
@@ -64,7 +66,7 @@ export class Google implements AiProvider {
     await saveConfig({apiKey: key}, this.name)
     this.apiKey = key
 
-    this.createGoogle()
+    this.createOpenRouter();
   }
 
   async setModel(model: string) {
@@ -76,18 +78,18 @@ export class Google implements AiProvider {
     await saveConfig({defaultModel: model}, this.name);
     this.model = model;
 
-    this.createGeminiModel()
+    this.createAiModel();
   }
 
   async runPrompt(prompt: string, model?: string): Promise<string> {
 
-    if (!this.gemini && model) {
+    if (!this.aiModel && model) {
       await this.setModel(model)
     }
 
-    if (this.gemini) {
+    if (this.aiModel) {
       const {text} = await generateText({
-        model: this.gemini,
+        model: this.aiModel,
         prompt: prompt
       })
       return text;
